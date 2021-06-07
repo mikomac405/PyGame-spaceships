@@ -22,16 +22,16 @@ BORDER = pygame.Rect((WIDTH/2)-5, 0, 10, HEIGHT)
 FPS = 60
 VELOCITY = 5
 BULLETS_VELOCITY = 7
-BONUS_VELOCITY = 10
-BOMB_VELOCITY_VERTICAL = 3
-BOMB_VELOCITY_HORIZONTAL = 5
+BONUS_VELOCITY = 3
+BOMB_VELOCITY_VERTICAL = 4
+BOMB_VELOCITY_HORIZONTAL = 6
 
 MAX_BULLETS = 3
 HEALTHS = 10
 SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 55, 44
 
-#SHOT_SOUND = AudioPlayer(os.path.join("Assets","Gun+Silencer.mp3")) #pygame.mixer.Sound(os.path.join("Assets","Gun+Silencer.mp3"))
-#HIT_SOUND = AudioPlayer(os.path.join("Assets","Grenade+1.mp3")) #pygame.mixer.Sound(os.path.join("Assets","Grenade+1.mp3"))
+SHOT_SOUND = pygame.mixer.Sound(os.path.join("Assets","Gun+Silencer.mp3"))
+HIT_SOUND = pygame.mixer.Sound(os.path.join("Assets","Grenade+1.mp3"))
 
 YELLOW_HIT = pygame.USEREVENT + 1
 RED_HIT = pygame.USEREVENT + 2
@@ -63,7 +63,7 @@ HEART = pygame.transform.scale(pygame.image.load(
 
 SPACE = pygame.transform.scale(pygame.image.load(os.path.join('Assets', 'space.png')), (WIDTH, HEIGHT))
 
-def draw_window(red, yellow, red_bullets, yellow_bullets, red_status, yellow_status, hearts, bombs, red_bomb, yellow_bomb, red_bomb_shooted, yellow_bomb_shooted):
+def draw_window(red, yellow, red_bullets, yellow_bullets, red_status, yellow_status, hearts, bombs, red_bombs_amount, yellow_bombs_amount, red_bombs, yellow_bombs):
     SURFACE.blit(SPACE, (0,0))
     pygame.draw.rect(SURFACE, BLACK, BORDER)
     SURFACE.blit(YELLOW_SPACESHIP, (yellow.x, yellow.y))
@@ -76,19 +76,24 @@ def draw_window(red, yellow, red_bullets, yellow_bullets, red_status, yellow_sta
         SURFACE.blit(HEART, (heart.x, heart.y))
     for bomb in bombs:
         SURFACE.blit(BOMB, (bomb.x, bomb.y))
+    if yellow_bombs_amount > 0:
+        SURFACE.blit(BOMB, (5, HEIGHT-30))
+        if yellow_bombs_amount > 1:
+            SURFACE.blit(BOMB, (35, HEIGHT-30))
+    if red_bombs_amount > 0:
+        SURFACE.blit(BOMB, (WIDTH-30, HEIGHT-30))
+        if red_bombs_amount > 1:
+            SURFACE.blit(BOMB, (WIDTH-60, HEIGHT-30))
+
+    for bomb in red_bombs:
+        SURFACE.blit(BOMB, (bomb[0].x, bomb[0].y))
+    
+    for bomb in yellow_bombs:
+        SURFACE.blit(BOMB, (bomb[0].x, bomb[0].y))
+
     SURFACE.blit(yellow_status,(0,0))    
     w, h = red_status.get_size()
     SURFACE.blit(red_status,(WIDTH-w,0))
-    if yellow_bomb:
-        SURFACE.blit(BOMB, (2, HEIGHT-27))
-    if red_bomb:
-        SURFACE.blit(BOMB, (WIDTH-27, HEIGHT-27))
-    if red_bomb_shooted:
-        bombR = red_bomb_shooted[0]
-        SURFACE.blit(BOMB, (bombR.x, bombR.y))
-    if yellow_bomb_shooted:
-        bombY = yellow_bomb_shooted[0]
-        SURFACE.blit(BOMB, (bombY.x, bombY.y))
     pygame.display.update()
 
 def yellow_handle_movement(keys, yellow):
@@ -116,7 +121,7 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
         bullet.x += BULLETS_VELOCITY
         if red.colliderect(bullet):
             pygame.event.post(pygame.event.Event(RED_HIT))
-            #HIT_SOUND.play()
+            HIT_SOUND.play()
             yellow_bullets.remove(bullet)
         if bullet.x > WIDTH:
             yellow_bullets.remove(bullet)
@@ -125,7 +130,7 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
         bullet.x -= BULLETS_VELOCITY
         if yellow.colliderect(bullet):
             pygame.event.post(pygame.event.Event(YELLOW_HIT))
-            #HIT_SOUND.play()
+            HIT_SOUND.play()
             red_bullets.remove(bullet)
         if bullet.x < 0:
             red_bullets.remove(bullet)
@@ -151,43 +156,38 @@ def handle_bonus(hearts, bombs, red, yellow):
             bombs.remove(bomb)
         if bomb.y > HEIGHT:
             bombs.remove(bomb)
-# TODO - REPAIR BOMBS !!!
-def handle_bombs(red_bombs_shooted, yellow_bombs_shooted, red, yellow):
-    if red_bombs_shooted is not None:
-        init_height = red_bombs_shooted[1]
 
-        if red_bombs_shooted[0].y > init_height-60 and red_bombs_shooted[2]:
-            red_bombs_shooted[0].y -= BOMB_VELOCITY_VERTICAL
-            red_bombs_shooted[0].x -= BOMB_VELOCITY_HORIZONTAL
+def handle_bombs(red_bombs, yellow_bombs, red, yellow):
+    for red_bomb in red_bombs:
+        bomb, initX, initY = red_bomb
+        if bomb.x > initX-70 and bomb.y > initY-40:
+            bomb.x -= BOMB_VELOCITY_HORIZONTAL
+            bomb.y -= BOMB_VELOCITY_VERTICAL
         else:
-            red_bombs_shooted[2] = False
-            red_bombs_shooted[0].y += BOMB_VELOCITY_VERTICAL
-            red_bombs_shooted[0].x -= BOMB_VELOCITY_HORIZONTAL
-
-        if red_bombs_shooted[0].x < 0 or red_bombs_shooted[0].y > HEIGHT:
-            yellow_bombs_shooted = None
-
-        if yellow.colliderect(red_bombs_shooted[0]):
-            yellow_bombs_shooted = None
+            bomb.x -= BOMB_VELOCITY_HORIZONTAL
+            bomb.y += BOMB_VELOCITY_VERTICAL
+        if yellow.colliderect(bomb):
             pygame.event.post(pygame.event.Event(YELLOW_HIT_BOMB))
-            
+            HIT_SOUND.play()
+            red_bombs.remove(red_bomb)
+        if bomb.y > HEIGHT:
+            red_bombs.remove(red_bomb)
 
-    if yellow_bombs_shooted is not None:
-        init_height = yellow_bombs_shooted[1]
-        if yellow_bombs_shooted[0].y > init_height-60 and yellow_bombs_shooted[2]:
-            yellow_bombs_shooted[0].y -= BOMB_VELOCITY_VERTICAL
-            yellow_bombs_shooted[0].x += BOMB_VELOCITY_HORIZONTAL
+    for yellow_bomb in yellow_bombs:
+        bomb, initX, initY = yellow_bomb
+        if bomb.x < initX+70 and bomb.y > initY-40:
+            bomb.x += BOMB_VELOCITY_HORIZONTAL
+            bomb.y -= BOMB_VELOCITY_VERTICAL
         else:
-            yellow_bombs_shooted[2] = False
-            yellow_bombs_shooted[0].y += BOMB_VELOCITY_VERTICAL
-            yellow_bombs_shooted[0].x += BOMB_VELOCITY_HORIZONTAL
-
-        if yellow_bombs_shooted[0].x > WIDTH or yellow_bombs_shooted[0].y > HEIGHT:
-            yellow_bombs_shooted = None
-
-        if red.colliderect(yellow_bombs_shooted[0]):
-            red_bombs_shooted = None
+            bomb.x += BOMB_VELOCITY_HORIZONTAL
+            bomb.y += BOMB_VELOCITY_VERTICAL
+        if red.colliderect(bomb):
             pygame.event.post(pygame.event.Event(RED_HIT_BOMB))
+            HIT_SOUND.play()
+            yellow_bombs.remove(yellow_bomb)
+        if bomb.y > HEIGHT:
+            yellow_bombs.remove(yellow_bomb)
+
 
 def check_win(red_health, yellow_health):
     if yellow_health < 1:
@@ -207,11 +207,11 @@ def main():
     hearts = []
     bombs = []
 
-    red_bomb = False
-    yellow_bomb = True
+    red_bombs_amount = 2
+    yellow_bombs_amount = 2
 
-    red_bomb_shooted = None
-    yellow_bomb_shooted = None
+    red_bombs = []
+    yellow_bombs = []
 
     red_health = HEALTHS
     yellow_health = HEALTHS
@@ -227,25 +227,27 @@ def main():
                 run = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LCTRL and len(yellow_bullets) < MAX_BULLETS:
-                    #SHOT_SOUND.play()
+                    SHOT_SOUND.play()
                     bullet = pygame.Rect(
                         yellow.x + yellow.width, yellow.y + yellow.height/2 - 3, 10, 6)
                     yellow_bullets.append(bullet)
                 if event.key == pygame.K_RCTRL and len(red_bullets) < MAX_BULLETS:
-                    #SHOT_SOUND.play()
+                    SHOT_SOUND.play()
                     bullet = pygame.Rect(
                         red.x-10, red.y + red.height/2-3, 10, 6)
                     red_bullets.append(bullet)
-                if event.key == pygame.K_LSHIFT and yellow_bomb:
-                    yellow_bomb = False
+                if event.key == pygame.K_LSHIFT and yellow_bombs_amount > 0:
+                    SHOT_SOUND.play()
+                    yellow_bombs_amount -= 1
                     bomb = pygame.Rect(
                         yellow.x + yellow.width, yellow.y + yellow.height/2 - 12, 25, 25)
-                    yellow_bomb_shooted = [bomb, bomb.y, True]
-                if event.key == pygame.K_RSHIFT and red_bomb:
-                    red_bomb = False
+                    yellow_bombs.append((bomb,bomb.x,bomb.y))
+                if event.key == pygame.K_RSHIFT and red_bombs_amount > 0:
+                    SHOT_SOUND.play()
+                    red_bombs_amount -= 1
                     bomb = pygame.Rect(
-                        red.x-10, red.y + red.height/2 - 12, 25, 25)
-                    red_bomb_shooted = [bomb, bomb.y, True]
+                        red.x-25, red.y + red.height/2 - 12, 25, 25)
+                    red_bombs.append((bomb,bomb.x,bomb.y))
                     
             if event.type == YELLOW_HIT:
                 yellow_health -=1
@@ -255,16 +257,14 @@ def main():
                 red_health += 1
             if event.type == YELLOW_LIFE:
                 yellow_health += 1
-            if event.type == RED_BOMB:
-                if not red_bomb:
-                    red_bomb = True
-            if event.type == YELLOW_BOMB:
-                if not yellow_bomb:
-                    yellow_bomb = True
-            if event.type == YELLOW_HIT_BOMB:
-                yellow_health -= 3
+            if event.type == YELLOW_BOMB and yellow_bombs_amount < 2:
+                yellow_bombs_amount += 1
+            if event.type == RED_BOMB and red_bombs_amount < 2:
+                red_bombs_amount += 1
             if event.type == RED_HIT_BOMB:
                 red_health -= 3
+            if event.type == YELLOW_HIT_BOMB:
+                yellow_health -= 3
             if event.type == RED_WIN:
                 winner = "RED WINS!"
                 run = False
@@ -273,7 +273,7 @@ def main():
                 run = False
 
         random_heart = random.randint(1,100)
-        random_bomb = 0 #random.randint(1,100)
+        random_bomb = random.randint(1,100)
 
         if random_heart == 1:
             heart = pygame.Rect(random.randint(0,WIDTH-10), -10, 10, 10)
@@ -293,9 +293,9 @@ def main():
         
         handle_bonus(hearts, bombs, red, yellow)
         handle_bullets(yellow_bullets, red_bullets, yellow, red)
-        #handle_bombs(red_bomb_shooted, yellow_bomb_shooted, red, yellow)
+        handle_bombs(red_bombs, yellow_bombs, red, yellow)
 
-        draw_window(red, yellow, red_bullets, yellow_bullets, red_status, yellow_status, hearts, bombs, red_bomb, yellow_bomb, red_bomb_shooted, yellow_bomb_shooted)
+        draw_window(red, yellow, red_bullets, yellow_bullets, red_status, yellow_status, hearts, bombs, red_bombs_amount, yellow_bombs_amount, red_bombs, yellow_bombs)
         
         check_win(red_health,yellow_health)
     myFont = pygame.font.SysFont('Arial',50, bold=True)
