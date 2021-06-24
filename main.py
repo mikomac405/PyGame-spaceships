@@ -3,6 +3,7 @@ from pygame.time import Clock
 import random
 import os
 
+# TODO - Sound player problems [$$$]
 pygame.mixer.pre_init(44100, 16, 2, 4096)
 
 WIDTH, HEIGHT = 900,500
@@ -30,7 +31,9 @@ MAX_BULLETS = 3
 HEALTHS = 10
 SPACESHIP_WIDTH, SPACESHIP_HEIGHT = 55, 44
 
+# [$$$]
 SHOT_SOUND = pygame.mixer.Sound(os.path.join("Assets","Gun+Silencer.mp3"))
+# [$$$]
 HIT_SOUND = pygame.mixer.Sound(os.path.join("Assets","Grenade+1.mp3"))
 
 YELLOW_HIT = pygame.USEREVENT + 1
@@ -121,6 +124,7 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
         bullet.x += BULLETS_VELOCITY
         if red.colliderect(bullet):
             pygame.event.post(pygame.event.Event(RED_HIT))
+            # [$$$]
             HIT_SOUND.play()
             yellow_bullets.remove(bullet)
         if bullet.x > WIDTH:
@@ -130,6 +134,7 @@ def handle_bullets(yellow_bullets, red_bullets, yellow, red):
         bullet.x -= BULLETS_VELOCITY
         if yellow.colliderect(bullet):
             pygame.event.post(pygame.event.Event(YELLOW_HIT))
+            # [$$$]
             HIT_SOUND.play()
             red_bullets.remove(bullet)
         if bullet.x < 0:
@@ -168,6 +173,7 @@ def handle_bombs(red_bombs, yellow_bombs, red, yellow):
             bomb.y += BOMB_VELOCITY_VERTICAL
         if yellow.colliderect(bomb):
             pygame.event.post(pygame.event.Event(YELLOW_HIT_BOMB))
+            # [$$$]
             HIT_SOUND.play()
             red_bombs.remove(red_bomb)
         if bomb.y > HEIGHT:
@@ -183,6 +189,7 @@ def handle_bombs(red_bombs, yellow_bombs, red, yellow):
             bomb.y += BOMB_VELOCITY_VERTICAL
         if red.colliderect(bomb):
             pygame.event.post(pygame.event.Event(RED_HIT_BOMB))
+            # [$$$]
             HIT_SOUND.play()
             yellow_bombs.remove(yellow_bomb)
         if bomb.y > HEIGHT:
@@ -227,22 +234,26 @@ def main():
                 run = False
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LCTRL and len(yellow_bullets) < MAX_BULLETS:
+                    # [$$$]
                     SHOT_SOUND.play()
                     bullet = pygame.Rect(
                         yellow.x + yellow.width, yellow.y + yellow.height/2 - 3, 10, 6)
                     yellow_bullets.append(bullet)
                 if event.key == pygame.K_RCTRL and len(red_bullets) < MAX_BULLETS:
+                    # [$$$]
                     SHOT_SOUND.play()
                     bullet = pygame.Rect(
                         red.x-10, red.y + red.height/2-3, 10, 6)
                     red_bullets.append(bullet)
                 if event.key == pygame.K_LSHIFT and yellow_bombs_amount > 0:
+                    # [$$$]
                     SHOT_SOUND.play()
                     yellow_bombs_amount -= 1
                     bomb = pygame.Rect(
                         yellow.x + yellow.width, yellow.y + yellow.height/2 - 12, 25, 25)
                     yellow_bombs.append((bomb,bomb.x,bomb.y))
                 if event.key == pygame.K_RSHIFT and red_bombs_amount > 0:
+                    # [$$$]
                     SHOT_SOUND.play()
                     red_bombs_amount -= 1
                     bomb = pygame.Rect(
